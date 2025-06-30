@@ -14,7 +14,7 @@ bot = Bot(token=BOT_TOKEN)
 dp = Dispatcher()
 
 # Set OpenAI key
-oopenai.api_key = OPENAI_API_KEY
+openai.api_key = OPENAI_API_KEY
 
 @dp.message(Command("start"))
 async def start_handler(message: types.Message):
