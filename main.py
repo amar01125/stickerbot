@@ -13,7 +13,19 @@ dp = Dispatcher()
 
 @dp.message(Command("start"))
 async def start_handler(message: types.Message):
-    await message.answer("Welcome!\n\nCreated by @herox_001")
+    await message.answer("🌙✨ Welcome to @LunaWhisperBot ✨🌙 created by @herox_001
+“Your pocket-sized mind companion.”
+
+Hey dreamer 👁‍🗨
+I’m Luna, an AI crafted to understand your thoughts, answer your questions, and maybe—just maybe—make the world feel a little less silent.
+
+🕯 What I can do:
+– Chat about anything
+– Help with ideas, thoughts, or deep questions
+– Be your late-night thinking buddy
+
+🔮 Type /help to begin your journey.
+Let’s talk... the universe is listening 🌌")
 
 async def on_startup(app):
     await bot.set_webhook(WEBHOOK_URL + WEBHOOK_PATH)
