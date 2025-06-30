@@ -3,20 +3,21 @@ from aiogram import Bot, Dispatcher, types, F
 from aiogram.filters import Command
 from aiogram.webhook.aiohttp_server import SimpleRequestHandler
 from aiohttp import web
-from openai import OpenAI
+import google.generativeai as genai
 
 # Get environment variables
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 WEBHOOK_PATH = "/webhook"
 WEBHOOK_URL = os.getenv("WEBHOOK_URL")  # e.g. https://your-app.onrender.com/webhook
-OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 
 # Setup bot and dispatcher
 bot = Bot(token=BOT_TOKEN)
 dp = Dispatcher()
 
-# Initialize OpenAI client (new version syntax)
-client = OpenAI(api_key=OPENAI_API_KEY)
+# Initialize Gemini client
+genai.configure(api_key=GEMINI_API_KEY)
+model = genai.GenerativeModel("gemini-pro")
 
 # Start command handler
 @dp.message(Command("start"))
@@ -44,20 +45,17 @@ Here’s what I can do:
 
 /start – Aesthetic welcome message  
 /help – Show this help menu  
-<your message> – I will reply like ChatGPT using AI 💬
+<your message> – I will reply like Gemini AI 💬
 
 Just type anything and let’s begin our conversation! ✨""")
 
 # Main AI reply handler
 @dp.message(F.text)
-async def chatgpt_reply(message: types.Message):
+async def gemini_reply(message: types.Message):
     try:
         user_input = message.text
-        response = client.chat.completions.create(
-            model="gpt-3.5-turbo",
-            messages=[{"role": "user", "content": user_input}]
-        )
-        reply = response.choices[0].message.content
+        response = model.generate_content(user_input)
+        reply = response.text
         await message.answer(reply)
 
     except Exception as e:
