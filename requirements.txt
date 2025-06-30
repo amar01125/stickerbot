@@ -1,3 +1,3 @@
 aiogram==3.20.0.post0
 aiohttp==3.11.6
-google-generativeai==0.5.4
+yt-dlp==2024.4.9
