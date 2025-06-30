@@ -55,6 +55,7 @@ async def handle_song_request(message: types.Message):
             'quiet': True,
             'noplaylist': True,
             'default_search': 'ytsearch1',
+            'cookies': 'cookies.txt',  # ✅ use cookies for login-protected videos
             'postprocessors': [{
                 'key': 'FFmpegExtractAudio',
                 'preferredcodec': 'mp3',
