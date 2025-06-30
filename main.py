@@ -54,8 +54,9 @@ async def chatgpt_reply(message: types.Message):
         )
         reply = response["choices"][0]["message"]["content"]
         await message.answer(reply)
-    except Exception as e:
-        await message.answer("⚠️ Sorry, something went wrong with the AI response.")
+  except Exception as e:
+    await message.answer(f"⚠️ AI error: {str(e)}")
+
 
 
 async def on_startup(app):
