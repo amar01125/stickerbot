@@ -1,82 +1,68 @@
 import os
-import yt_dlp
+import subprocess
 from aiogram import Bot, Dispatcher, types, F
 from aiogram.filters import Command
 from aiogram.webhook.aiohttp_server import SimpleRequestHandler
 from aiohttp import web
 
-# Load environment variables
+# Load env vars
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 WEBHOOK_PATH = "/webhook"
 WEBHOOK_URL = os.getenv("WEBHOOK_URL")
 
-# Create downloads folder if not exists
+# Ensure downloads folder exists
 os.makedirs("downloads", exist_ok=True)
 
-# Setup bot and dispatcher
 bot = Bot(token=BOT_TOKEN)
 dp = Dispatcher()
 
-# /start command
 @dp.message(Command("start"))
 async def start_handler(message: types.Message):
-    await message.answer("""🎧 Welcome to MP3Bot by @herox_001
+    await message.answer("""🎧 Welcome to Spotify MP3Bot
 
-📝 Just send a song name or YouTube link and I'll send you an MP3 🎵
-Example: `Tum Mile` or `https://youtu.be/xyz...`
+📝 Send a Spotify link (track/album/playlist)
+and I'll reply with the MP3 file(s) 🎶
 
-⚙️ Powered by yt-dlp & aiogram
+⚙️ Powered by spotdl & aiogram
 """)
 
-# /help command
 @dp.message(Command("help"))
 async def help_handler(message: types.Message):
-    await message.answer("""🛠 **Help Menu**
+    await message.answer("""🛠 Help Menu
 
-▶️ Just type any song name or paste a YouTube link.
+▶️ Paste a Spotify link (track/album/playlist).
 
-I'll download the audio in MP3 format and send it to you.
+I'll fetch the audio in MP3 format and send it to you.
 
 🎵 Example:
-- *Tum Mile*
-- *https://youtu.be/xyz123*
+- https://open.spotify.com/track/xyz
+- https://open.spotify.com/playlist/abc
 
-Please be patient while I fetch the song!""")
+Please wait while I fetch your music.
+""")
 
-# Song downloader handler
 @dp.message(F.text)
 async def handle_song_request(message: types.Message):
-    query = message.text.strip()
-    await message.answer("🔎 Searching and downloading... Please wait ⏳")
+    url = message.text.strip()
+    await message.answer("🔎 Fetching from Spotify... Please wait ⏳")
     try:
-        ydl_opts = {
-            'format': 'bestaudio/best',
-            'outtmpl': 'downloads/%(title)s.%(ext)s',
-            'quiet': True,
-            'noplaylist': True,
-            'default_search': 'ytsearch1',
-            'cookiefile': 'cookies.txt',
-            'user_agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36',
-            'postprocessors': [{
-                'key': 'FFmpegExtractAudio',
-                'preferredcodec': 'mp3',
-                'preferredquality': '192',
-            }],
-        }
+        # Run spotdl to download to downloads folder
+        subprocess.run([
+            "spotdl", url,
+            "--output", "downloads/{title}.{output-ext}",
+            "--format", "mp3"
+        ], check=True)
 
-        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-            info = ydl.extract_info(query, download=True)
-            filename = ydl.prepare_filename(info).replace(".webm", ".mp3").replace(".m4a", ".mp3")
+        # Send all .mp3 files in downloads folder
+        for file in os.listdir("downloads"):
+            if file.endswith(".mp3"):
+                filepath = os.path.join("downloads", file)
+                await message.answer_audio(types.FSInputFile(filepath), title=file.replace(".mp3", ""))
+                os.remove(filepath)
 
-        title = info.get("title", "Song")
+    except subprocess.CalledProcessError as e:
+        await message.answer(f"❌ Error downloading: {e}")
 
-        await message.answer_audio(types.FSInputFile(filename), title=title)
-        os.remove(filename)
-
-    except Exception as e:
-        await message.answer(f"❌ Error: {e}")
-
-# Webhook setup
 async def on_startup(app):
     await bot.set_webhook(WEBHOOK_URL + WEBHOOK_PATH)
 
