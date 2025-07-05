@@ -107,3 +107,20 @@ async def ping(message: types.Message):
     await message.answer("🏓 Bot is alive!")
 
 # [Other command handlers remain unchanged and continue below here...]
+
+async def on_startup(app):
+    await bot.set_webhook(WEBHOOK_URL + WEBHOOK_PATH)
+
+async def on_shutdown(app):
+    await bot.delete_webhook()
+
+def create_app():
+    app = web.Application()
+    SimpleRequestHandler(dispatcher=dp, bot=bot).register(app, path=WEBHOOK_PATH)
+    app.on_startup.append(on_startup)
+    app.on_shutdown.append(on_shutdown)
+    return app
+
+if __name__ == "__main__":
+    app = create_app()
+    web.run_app(app, port=int(os.getenv("PORT", 8080)))
