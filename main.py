@@ -1,67 +1,77 @@
 import os
-import subprocess
+import io
+from PIL import Image, ImageDraw, ImageFont
 from aiogram import Bot, Dispatcher, types, F
 from aiogram.filters import Command
 from aiogram.webhook.aiohttp_server import SimpleRequestHandler
 from aiohttp import web
 
-# Load env vars
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 WEBHOOK_PATH = "/webhook"
 WEBHOOK_URL = os.getenv("WEBHOOK_URL")
 
-# Ensure downloads folder exists
-os.makedirs("downloads", exist_ok=True)
+# Ensure stickers folder exists
+os.makedirs("stickers", exist_ok=True)
 
 bot = Bot(token=BOT_TOKEN)
 dp = Dispatcher()
 
 @dp.message(Command("start"))
 async def start_handler(message: types.Message):
-    await message.answer("""🎧 Welcome to Spotify MP3Bot
+    await message.answer("""👋 Welcome to StickerMaker Bot
 
-📝 Send a Spotify link (track/album/playlist)
-and I'll reply with the MP3 file(s) 🎶
+🖊 Send any text — I'll turn it into a sticker
+🖼 Send any photo — I'll convert it into a sticker
 
-⚙️ Powered by spotdl & aiogram
+⚙️ Powered by aiogram & Pillow
 """)
 
 @dp.message(Command("help"))
 async def help_handler(message: types.Message):
-    await message.answer("""🛠 Help Menu
+    await message.answer("""🛠 Help Guide
 
-▶️ Paste a Spotify link (track/album/playlist).
+✅ Send text — Get a text sticker
+✅ Send image — Get an image sticker
 
-I'll fetch the audio in MP3 format and send it to you.
-
-🎵 Example:
-- https://open.spotify.com/track/xyz
-- https://open.spotify.com/playlist/abc
-
-Please wait while I fetch your music.
+🔄 Stickers are auto-generated and sent back to you.
 """)
 
 @dp.message(F.text)
-async def handle_song_request(message: types.Message):
-    url = message.text.strip()
-    await message.answer("🔎 Fetching from Spotify... Please wait ⏳")
+async def text_to_sticker(message: types.Message):
+    text = message.text.strip()
+    if not text:
+        return
+
+    img = Image.new("RGBA", (512, 512), (255, 255, 255, 0))
+    draw = ImageDraw.Draw(img)
     try:
-        # Run spotdl to download to downloads folder
-        subprocess.run([
-            "spotdl", url,
-            "--output", "downloads/{title}.{output-ext}",
-            "--format", "mp3"
-        ], check=True)
+        font = ImageFont.truetype("arial.ttf", 48)
+    except:
+        font = ImageFont.load_default()
 
-        # Send all .mp3 files in downloads folder
-        for file in os.listdir("downloads"):
-            if file.endswith(".mp3"):
-                filepath = os.path.join("downloads", file)
-                await message.answer_audio(types.FSInputFile(filepath), title=file.replace(".mp3", ""))
-                os.remove(filepath)
+    w, h = draw.textsize(text, font=font)
+    draw.text(((512-w)//2, (512-h)//2), text, fill="black", font=font)
 
-    except subprocess.CalledProcessError as e:
-        await message.answer(f"❌ Error downloading: {e}")
+    sticker_path = f"stickers/text_{message.message_id}.webp"
+    img.save(sticker_path, format="WEBP")
+
+    await message.answer_sticker(types.FSInputFile(sticker_path))
+    os.remove(sticker_path)
+
+@dp.message(F.photo)
+async def photo_to_sticker(message: types.Message):
+    photo = message.photo[-1]
+    file = await bot.get_file(photo.file_id)
+    photo_data = await bot.download_file(file.file_path)
+
+    img = Image.open(io.BytesIO(photo_data.read())).convert("RGBA")
+    img = img.resize((512, 512))
+
+    sticker_path = f"stickers/photo_{message.message_id}.webp"
+    img.save(sticker_path, format="WEBP")
+
+    await message.answer_sticker(types.FSInputFile(sticker_path))
+    os.remove(sticker_path)
 
 async def on_startup(app):
     await bot.set_webhook(WEBHOOK_URL + WEBHOOK_PATH)
