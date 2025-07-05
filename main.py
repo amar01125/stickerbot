@@ -49,8 +49,9 @@ async def text_to_sticker(message: types.Message):
     except:
         font = ImageFont.load_default()
 
-    w, h = draw.textsize(text, font=font)
-    draw.text(((512-w)//2, (512-h)//2), text, fill="black", font=font)
+    bbox = draw.textbbox((0, 0), text, font=font)
+    w, h = bbox[2] - bbox[0], bbox[3] - bbox[1]
+    draw.text(((512 - w) // 2, (512 - h) // 2), text, fill="black", font=font)
 
     sticker_path = f"stickers/text_{message.message_id}.webp"
     img.save(sticker_path, format="WEBP")
