@@ -106,6 +106,91 @@ async def bg_color_sticker(message: types.Message):
 async def ping(message: types.Message):
     await message.answer("🏓 Bot is alive!")
 
+@dp.message(Command("q"))
+async def quote_message_as_sticker(message: types.Message):
+    if not message.reply_to_message:
+        await message.answer("📌 Please reply to a message with /q to quote it.")
+        return
+    replied = message.reply_to_message
+    text = replied.text or replied.caption or ""
+    author = replied.from_user.full_name if replied.from_user else "Unknown"
+    profile_pic = None
+    try:
+        photos = await bot.get_user_profile_photos(replied.from_user.id, limit=1)
+        if photos.total_count:
+            file_id = photos.photos[0][0].file_id
+            file = await bot.get_file(file_id)
+            photo_data = await bot.download_file(file.file_path)
+            profile_pic = Image.open(io.BytesIO(photo_data.read())).convert("RGBA").resize((64, 64))
+    except:
+        pass
+    img = Image.new("RGBA", (512, 512), (245, 245, 245, 255))
+    draw = ImageDraw.Draw(img)
+    try:
+        font = ImageFont.truetype("arial.ttf", 36)
+        name_font = ImageFont.truetype("arial.ttf", 24)
+    except:
+        font = ImageFont.load_default()
+        name_font = ImageFont.load_default()
+    draw.multiline_text((20, 80), text, font=font, fill="black")
+    draw.text((20, 20), f"{author} says:", font=name_font, fill="blue")
+    if profile_pic:
+        img.paste(profile_pic, (512 - 74, 10), mask=profile_pic)
+    path = f"stickers/quote_{message.message_id}.webp"
+    img.save(path, format="WEBP")
+    await message.answer_sticker(types.FSInputFile(path))
+    os.remove(path)
+
+@dp.message(F.text)
+async def text_to_sticker(message: types.Message):
+    text = message.text.strip()
+    if not text:
+        return
+    user = message.from_user
+    name = user.full_name
+    profile_pic = None
+    try:
+        photos = await bot.get_user_profile_photos(user.id, limit=1)
+        if photos.total_count:
+            file_id = photos.photos[0][0].file_id
+            file = await bot.get_file(file_id)
+            photo_data = await bot.download_file(file.file_path)
+            profile_pic = Image.open(io.BytesIO(photo_data.read())).convert("RGBA").resize((64, 64))
+    except:
+        pass
+    img = Image.new("RGBA", (512, 512), (148, 0, 211, 255))
+    draw = ImageDraw.Draw(img)
+    try:
+        font = ImageFont.truetype("arial.ttf", 60)
+        small_font = ImageFont.truetype("arial.ttf", 24)
+    except:
+        font = ImageFont.load_default()
+        small_font = ImageFont.load_default()
+    bbox = draw.textbbox((0, 0), text, font=font)
+    w, h = bbox[2] - bbox[0], bbox[3] - bbox[1]
+    draw.text(((512 - w) // 2, (512 - h) // 2), text, fill="white", font=font)
+    caption = f"👤 by {name}"
+    color = tuple(random.randint(0, 255) for _ in range(3))
+    draw.text((10, 512 - 30), caption, font=small_font, fill=color)
+    if profile_pic:
+        img.paste(profile_pic, (512 - 74, 512 - 74), mask=profile_pic)
+    path = f"stickers/text_{message.message_id}.webp"
+    img.save(path, format="WEBP")
+    await message.answer_sticker(types.FSInputFile(path))
+    os.remove(path)
+
+@dp.message(F.photo)
+async def photo_to_sticker(message: types.Message):
+    photo = message.photo[-1]
+    file = await bot.get_file(photo.file_id)
+    photo_data = await bot.download_file(file.file_path)
+    img = Image.open(io.BytesIO(photo_data.read())).convert("RGBA")
+    img = img.resize((512, 512))
+    path = f"stickers/photo_{message.message_id}.webp"
+    img.save(path, format="WEBP")
+    await message.answer_sticker(types.FSInputFile(path))
+    os.remove(path)
+
 # [Other command handlers remain unchanged and continue below here...]
 
 async def on_startup(app):
