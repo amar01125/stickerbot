@@ -1,0 +1,14 @@
+services:
+  - type: web
+    name: spotify-mp3bot
+    env: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: python main.py
+    envVars:
+      - key: BOT_TOKEN
+        value: your-bot-token
+      - key: WEBHOOK_URL
+        value: https://your-render-url.onrender.com
+      - key: PORT
+        value: 8080
