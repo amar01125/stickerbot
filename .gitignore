@@ -1,0 +1,8 @@
+# temp sticker images
+stickers/
+
+# Python cache files
+__pycache__/
+
+# environment config
+.env
