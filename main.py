@@ -6,9 +6,10 @@ from aiogram.filters import Command
 from aiogram.webhook.aiohttp_server import SimpleRequestHandler
 from aiohttp import web
 
-BOT_TOKEN = os.getenv("BOT_TOKEN")
+# Hardcoded for Render
+BOT_TOKEN = "7972815740:AAHjhjeuO44SB8OK7M-bS_6wDDDewWuPfE8"
 WEBHOOK_PATH = "/webhook"
-WEBHOOK_URL = os.getenv("WEBHOOK_URL")
+WEBHOOK_URL = "https://stickerbot-kvme.onrender.com"
 
 # Ensure stickers folder exists
 os.makedirs("stickers", exist_ok=True)
@@ -42,7 +43,7 @@ async def text_to_sticker(message: types.Message):
     if not text:
         return
 
-    img = Image.new("RGBA", (512, 512), (255, 255, 255, 0))
+    img = Image.new("RGBA", (512, 512), (255, 255, 255, 255))  # opaque white background
     draw = ImageDraw.Draw(img)
     try:
         font = ImageFont.truetype("arial.ttf", 48)
